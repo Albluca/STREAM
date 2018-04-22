@@ -27,8 +27,6 @@ import time
 
 _ROOT = os.path.abspath(os.path.dirname(__file__))
 
-
-
 class Dash_responsive(dash.Dash):
     def __init__(self, *args, **kwargs):
         super(Dash_responsive,self).__init__(*args, **kwargs)
@@ -1525,7 +1523,7 @@ def num_clicks_compute(dataset):
 
 def update_input_files(pathname):
 
-	file_names = ['Data Matrix', 'Cell Labels', 'Cell Label Colors']
+	file_names = ['Data Matrix', 'Cell Labels (Optional)', 'Cell Label Colors (Optional)']
 
 	return ','.join(file_names)
 
@@ -2015,6 +2013,14 @@ def compute_trajectories(pathname, n_clicks):
 				cell_label = glob.glob(UPLOADS_FOLDER + '/Cell_Labels*')
 				cell_label_colors = glob.glob(UPLOADS_FOLDER + '/Cell_Label_Colors*')
 
+				edges = RESULTS_FOLDER + '/edges.tsv'
+				edge_list = []
+
+				with open(edges, 'r') as f:
+					for line in f:
+						line = line.strip().split('\t')
+						edge_list.append([str(line[0]), str(line[1])])
+
 				cell_label_list = []
 				if len(cell_label) > 0:
 					if cell_label[0].endswith('.gz'):
@@ -2058,6 +2064,45 @@ def compute_trajectories(pathname, n_clicks):
 				coord_states = RESULTS_FOLDER + '/coord_states.csv'
 				path_coords = glob.glob(RESULTS_FOLDER + '/coord_curve*csv')
 
+				path_coords_reordered = []
+				for e in edge_list:
+					entry = [x for x in path_coords if ((e[0] in x.split('/')[-1]) and (e[1] in x.split('/')[-1]))]
+					path_coords_reordered.append(entry[0])
+
+				traces = []
+				roots = []
+				for path in path_coords_reordered:
+					x_p = []
+					y_p = []
+					z_p = []
+					s1 = path.strip().split('_')[-2]
+					s2 = path.strip().split('_')[-1].strip('.csv')
+					s_3 = sorted([s1, s2])
+					path_name = '-'.join(map(str, s_3))
+					roots.append(s1)
+					roots.append(s2)
+					with open(path, 'r') as f:
+						next(f)
+						for line in f:
+							line = line.strip().split('\t')
+							x_p.append(float(line[0]))
+							y_p.append(float(line[1]))
+							z_p.append(float(line[2]))
+						traces.append(
+
+							go.Scatter3d(
+									    x=x_p, y=y_p, z=z_p,
+									    # text = [s1, s2],
+									    mode = 'lines',
+									    opacity = 0.7,
+									    name = path_name,
+									    line=dict(
+									        width=10
+									    ),
+									)
+
+							)
+
 				x = []
 				y = []
 				z = []
@@ -2078,7 +2123,7 @@ def compute_trajectories(pathname, n_clicks):
 
 				cell_types = {}
 				if color_plot == 0:
-					cell_types['single-cell mappings'] = [x, y, z, 'unlabeled', 'grey']
+					cell_types['Single Cells'] = [x, y, z, 'unlabeled', 'grey']
 				elif color_plot == 0.5:
 					for label, x_c, y_c, z_c, color in zip(labels, x, y, z, c):
 						if label not in cell_types:
@@ -2098,7 +2143,6 @@ def compute_trajectories(pathname, n_clicks):
 						cell_types[label][3].append(label)
 						cell_types[label][4].append(color)
 
-				traces = []
 				for label in cell_types:
 					traces.append(
 						go.Scatter3d(
@@ -2155,39 +2199,6 @@ def compute_trajectories(pathname, n_clicks):
 
 					# 		)
 
-				roots = []
-				for path in path_coords:
-					x_p = []
-					y_p = []
-					z_p = []
-					s1 = path.strip().split('_')[-2]
-					s2 = path.strip().split('_')[-1].strip('.csv')
-					s_3 = [s1, s2]
-					path_name = '-'.join(map(str, s_3))
-					roots.append(s1)
-					roots.append(s2)
-					with open(path, 'r') as f:
-						next(f)
-						for line in f:
-							line = line.strip().split('\t')
-							x_p.append(float(line[0]))
-							y_p.append(float(line[1]))
-							z_p.append(float(line[2]))
-						traces.append(
-
-							go.Scatter3d(
-									    x=x_p, y=y_p, z=z_p,
-									    # text = [s1, s2],
-									    mode = 'lines',
-									    opacity = 0.7,
-									    name = path_name,
-									    line=dict(
-									        width=10
-									    ),
-									)
-
-							)
-
 				roots = sorted(list(set(roots)))
 
 				df = pd.read_table(matrix[0])
@@ -2230,6 +2241,14 @@ def compute_trajectories(dataset):
 		cell_label = glob.glob('/STREAM/precomputed/%s/cell_label.tsv.gz*' % dataset)
 		cell_label_colors = glob.glob('/STREAM/precomputed/%s/cell_label_color.tsv.gz*' % dataset)
 
+		edges = '/STREAM/precomputed/%s/STREAM_result/edges.tsv' % dataset
+		edge_list = []
+
+		with open(edges, 'r') as f:
+			for line in f:
+				line = line.strip().split('\t')
+				edge_list.append([str(line[0]), str(line[1])])
+
 		cell_label_list = []
 		if len(cell_label) > 0:
 			if cell_label[0].endswith('.gz'):
@@ -2265,6 +2284,44 @@ def compute_trajectories(dataset):
 		coord_states = '/STREAM/precomputed/%s/STREAM_result/coord_states.csv' % dataset
 		path_coords = glob.glob('/STREAM/precomputed/%s/STREAM_result/coord_curve*csv' % dataset)
 
+		path_coords_reordered = []
+		for e in edge_list:
+			entry = [x for x in path_coords if ((e[0] in x.split('/')[-1]) and (e[1] in x.split('/')[-1]))]
+			path_coords_reordered.append(entry[0])
+
+		roots = []
+		for path in path_coords_reordered:
+			x_p = []
+			y_p = []
+			z_p = []
+			s1 = path.strip().split('_')[-2]
+			s2 = path.strip().split('_')[-1].strip('.csv')
+			s_3 = sorted([s1, s2])
+			path_name = '-'.join(map(str, s_3))
+			roots.append(s1)
+			roots.append(s2)
+			with open(path, 'r') as f:
+				next(f)
+				for line in f:
+					line = line.strip().split('\t')
+					x_p.append(float(line[0]))
+					y_p.append(float(line[1]))
+					z_p.append(float(line[2]))
+				traces.append(
+
+					go.Scatter3d(
+							    x=x_p, y=y_p, z=z_p,
+							    # text = [s1, s2],
+							    mode = 'lines',
+							    opacity = 0.7,
+							    name = path_name,
+							    line=dict(
+							        width=10
+							    ),
+							)
+
+					)
+
 		x = []
 		y = []
 		z = []
@@ -2285,7 +2342,7 @@ def compute_trajectories(dataset):
 
 		cell_types = {}
 		if color_plot == 0:
-			cell_types['single-cell mappings'] = [x, y, z, 'unlabeled', 'grey']
+			cell_types['Single Cells'] = [x, y, z, 'unlabeled', 'grey']
 		elif color_plot == 0.5:
 			for label, x_c, y_c, z_c, color in zip(labels, x, y, z, c):
 				if label not in cell_types:
@@ -2361,39 +2418,6 @@ def compute_trajectories(dataset):
 			# 			)
 
 			# 		)
-
-		roots = []
-		for path in path_coords:
-			x_p = []
-			y_p = []
-			z_p = []
-			s1 = path.strip().split('_')[-2]
-			s2 = path.strip().split('_')[-1].strip('.csv')
-			s_3 = [s1, s2]
-			path_name = '-'.join(map(str, s_3))
-			roots.append(s1)
-			roots.append(s2)
-			with open(path, 'r') as f:
-				next(f)
-				for line in f:
-					line = line.strip().split('\t')
-					x_p.append(float(line[0]))
-					y_p.append(float(line[1]))
-					z_p.append(float(line[2]))
-				traces.append(
-
-					go.Scatter3d(
-							    x=x_p, y=y_p, z=z_p,
-							    # text = [s1, s2],
-							    mode = 'lines',
-							    opacity = 0.7,
-							    name = path_name,
-							    line=dict(
-							        width=10
-							    ),
-							)
-
-					)
 
 	except:
 		pass
@@ -2488,17 +2512,19 @@ def compute_trajectories(pathname, threed_scatter, n_clicks):
 				with open(edges, 'r') as f:
 					for line in f:
 						line = line.strip().split('\t')
-						edge_list.append([str(line[0]), str(line[1])])
+						edge_list.append(sorted([str(line[0]), str(line[1])]))
 
 				path_coords = {}
+				path_coords_reordered = []
 				for edge in edge_list:
 					edge_name = '-'.join(map(str, edge))
+					path_coords_reordered.append(edge_name)
 					x_values = [node_list[edge[0]][0], node_list[edge[1]][0]]
 					y_values = [node_list[edge[0]][1], node_list[edge[1]][1]]
 					path_coords[edge_name] = [x_values, y_values]
 
 				traces = []
-				for path in path_coords:
+				for path in path_coords_reordered:
 					path_name = path
 					x_p = path_coords[path][0]
 					y_p = path_coords[path][1]
@@ -2540,7 +2566,7 @@ def compute_trajectories(pathname, threed_scatter, n_clicks):
 
 				cell_types = {}
 				if color_plot == 0:
-					cell_types['single-cell mappings'] = [x, y, z, cell_label_list, 'grey']
+					cell_types['Single Cells'] = [x, y, cell_label_list, 'grey']
 				elif color_plot == 0.5:
 					for label, x_c, y_c, color in zip(labels, x, y, c):
 						if label not in cell_types:
@@ -2646,16 +2672,18 @@ def compute_trajectories(dataset):
 		with open(edges, 'r') as f:
 			for line in f:
 				line = line.strip().split('\t')
-				edge_list.append([str(line[0]), str(line[1])])
+				edge_list.append(sorted([str(line[0]), str(line[1])]))
 
 		path_coords = {}
+		path_coords_reordered = []
 		for edge in edge_list:
 			edge_name = '-'.join(map(str, edge))
+			path_coords_reordered.append(edge_name)
 			x_values = [node_list[edge[0]][0], node_list[edge[1]][0]]
 			y_values = [node_list[edge[0]][1], node_list[edge[1]][1]]
 			path_coords[edge_name] = [x_values, y_values]
 
-		for path in path_coords:
+		for path in path_coords_reordered:
 			path_name = path
 			x_p = path_coords[path][0]
 			y_p = path_coords[path][1]
@@ -2697,7 +2725,7 @@ def compute_trajectories(dataset):
 
 		cell_types = {}
 		if color_plot == 0:
-			cell_types['single-cell mappings'] = [x, y, 'unlabeled', 'grey']
+			cell_types['Single Cells'] = [x, y, 'unlabeled', 'grey']
 		elif color_plot == 0.5:
 			for label, x_c, y_c, color in zip(labels, x, y, c):
 				if label not in cell_types:
@@ -2832,8 +2860,25 @@ def num_clicks_compute(root, figure, pathname):
 	elif len(cell_label_list) > 0 and len(cell_label_colors_dict) == 0:
 		color_plot = 0.5
 
-	traces = []
+	edges = RESULTS_FOLDER + '/edges.tsv'
+	edge_list = []
+
+	with open(edges, 'r') as f:
+		for line in f:
+			line = line.strip().split('\t')
+			edge_list.append([str(line[0]), str(line[1])])
+
+	path_coords_reordered = []
+	for e in edge_list:
+		entry = [x for x in path_coords if ((e[0] in x.split('/')[-1]) and (e[1] in x.split('/')[-1]))]
+		path_coords_reordered.append(entry[0])
+
 	for path in path_coords:
+		if path not in path_coords_reordered:
+			path_coords_reordered.append(path)
+
+	traces = []
+	for path in path_coords_reordered:
 		x_p = []
 		y_p = []
 		s1 = path.strip().split('_')[-2]
@@ -2893,7 +2938,7 @@ def num_clicks_compute(root, figure, pathname):
 
 	cell_types = {}
 	if color_plot == 0:
-		cell_types['single-cell mappings'] = [x, y, 'unlabeled', 'grey']
+		cell_types['Single Cells'] = [x, y, 'unlabeled', 'grey']
 	elif color_plot == 0.5:
 		for label, x_c, y_c, color in zip(labels, x, y, c):
 			if label not in cell_types:
@@ -2933,7 +2978,7 @@ def num_clicks_compute(root, figure, pathname):
         	autosize = True,
         	margin=dict(l=0,r=0,t=0),
             hovermode='closest',
-            xaxis = dict(showgrid = False, zeroline=False, title = 'Pseudotime'),
+            xaxis = dict(showgrid = False, zeroline=False, showline=True, title = 'Pseudotime'),
             yaxis = dict(showgrid = False, zeroline=False, title = ''),
         )
     }
@@ -2989,7 +3034,24 @@ def num_clicks_compute(root, dataset):
 		elif len(cell_label_list) > 0 and len(cell_label_colors_dict) == 0:
 			color_plot = 0.5
 
+		edges = '/STREAM/precomputed/%s/STREAM_result/edges.tsv' % dataset
+		edge_list = []
+
+		with open(edges, 'r') as f:
+			for line in f:
+				line = line.strip().split('\t')
+				edge_list.append([str(line[0]), str(line[1])])
+
+		path_coords_reordered = []
+		for e in edge_list:
+			entry = [x for x in path_coords if ((e[0] in x.split('/')[-1]) and (e[1] in x.split('/')[-1]))]
+			path_coords_reordered.append(entry[0])
+
 		for path in path_coords:
+			if path not in path_coords_reordered:
+				path_coords_reordered.append(path)
+
+		for path in path_coords_reordered:
 			x_p = []
 			y_p = []
 			s1 = path.strip().split('_')[-2]
@@ -3054,7 +3116,7 @@ def num_clicks_compute(root, dataset):
 
 		cell_types = {}
 		if color_plot == 0:
-			cell_types['single-cell mappings'] = [x, y, 'unlabeled', 'grey']
+			cell_types['Single Cells'] = [x, y, 'unlabeled', 'grey']
 		elif color_plot == 0.5:
 			for label, x_c, y_c, color in zip(labels, x, y, c):
 				if label not in cell_types:
@@ -3098,7 +3160,7 @@ def num_clicks_compute(root, dataset):
         	autosize = True,
         	margin=dict(l=0,r=0,t=0),
             hovermode='closest',
-            xaxis = dict(showgrid = False, zeroline=False, title = 'Pseudotime'),
+            xaxis = dict(showgrid = False, zeroline=False, showline=True, title = 'Pseudotime'),
             yaxis = dict(showgrid = False, zeroline=False, title = ''),
         )
     }
@@ -3518,8 +3580,25 @@ def compute_trajectories(pathname, n_clicks, root, gene):
 				genes = glob.glob(RESULTS_FOLDER + '/%s/subway_coord_*csv' % root)
 				genes = [x.split('_')[-1].strip('.csv') for x in genes]
 
-				traces = []
+				edges = RESULTS_FOLDER + '/edges.tsv'
+				edge_list = []
+
+				with open(edges, 'r') as f:
+					for line in f:
+						line = line.strip().split('\t')
+						edge_list.append([str(line[0]), str(line[1])])
+
+				path_coords_reordered = []
+				for e in edge_list:
+					entry = [x for x in path_coords if ((e[0] in x.split('/')[-1]) and (e[1] in x.split('/')[-1]))]
+					path_coords_reordered.append(entry[0])
+
 				for path in path_coords:
+					if path not in path_coords_reordered:
+						path_coords_reordered.append(path)
+
+				traces = []
+				for path in path_coords_reordered:
 					x_p = []
 					y_p = []
 					s1 = path.strip().split('_')[-2]
@@ -3584,7 +3663,7 @@ def compute_trajectories(pathname, n_clicks, root, gene):
 								y = y_c,
 								mode='markers',
 								opacity = 0.6,
-								name = 'single-cell mappings',
+								name = 'Single Cells',
 								text = exp_labels,
 								marker = dict(
 									size = 6,
@@ -3610,7 +3689,7 @@ def compute_trajectories(pathname, n_clicks, root, gene):
         	autosize = True,
         	margin=dict(l=0,r=0,t=0),
             hovermode='closest',
-            xaxis = dict(showgrid = False, zeroline=False, title = 'Pseudotime'),
+            xaxis = dict(showgrid = False, zeroline=False, showline=True, title = 'Pseudotime'),
             yaxis = dict(showgrid = False, zeroline=False, title = ''),
         )
     }
@@ -3632,8 +3711,25 @@ def compute_trajectories(dataset, gene, root):
 	cell_label = '/STREAM/precomputed/%s/cell_label.tsv.gz' % dataset
 	cell_label_colors = '/STREAM/precomputed/%s/cell_label_color.tsv.gz' % dataset
 
-	traces = []
+	edges = '/STREAM/precomputed/%s/STREAM_result/edges.tsv' % dataset
+	edge_list = []
+
+	with open(edges, 'r') as f:
+		for line in f:
+			line = line.strip().split('\t')
+			edge_list.append([str(line[0]), str(line[1])])
+
+	path_coords_reordered = []
+	for e in edge_list:
+		entry = [x for x in path_coords if ((e[0] in x.split('/')[-1]) and (e[1] in x.split('/')[-1]))]
+		path_coords_reordered.append(entry[0])
+
 	for path in path_coords:
+		if path not in path_coords_reordered:
+			path_coords_reordered.append(path)
+
+	traces = []
+	for path in path_coords_reordered:
 		x_p = []
 		y_p = []
 		s1 = path.strip().split('_')[-2]
@@ -3698,7 +3794,7 @@ def compute_trajectories(dataset, gene, root):
 					y = y_c,
 					mode='markers',
 					opacity = 0.6,
-					name = 'single-cell mappings',
+					name = 'Single Cells',
 					text = exp_labels,
 					marker = dict(
 						size = 6,
@@ -3714,7 +3810,7 @@ def compute_trajectories(dataset, gene, root):
         	autosize = True,
         	margin=dict(l=0,r=0,t=0),
             hovermode='closest',
-            xaxis = dict(showgrid = False, zeroline=False, title = 'Pseudotime'),
+            xaxis = dict(showgrid = False, zeroline=False, showline=True, title = 'Pseudotime'),
             yaxis = dict(showgrid = False, zeroline=False, title = ''),
         )
     }
@@ -4111,8 +4207,25 @@ def compute_trajectories(pathname, root, gene, n_clicks):
 					new_json_string = json.dumps(param_dict)
 					f.write(new_json_string + '\n')
 
-				traces = []
+				edges = RESULTS_FOLDER + '/edges.tsv'
+				edge_list = []
+
+				with open(edges, 'r') as f:
+					for line in f:
+						line = line.strip().split('\t')
+						edge_list.append([str(line[0]), str(line[1])])
+
+				path_coords_reordered = []
+				for e in edge_list:
+					entry = [x for x in path_coords if ((e[0] in x.split('/')[-1]) and (e[1] in x.split('/')[-1]))]
+					path_coords_reordered.append(entry[0])
+
 				for path in path_coords:
+					if path not in path_coords_reordered:
+						path_coords_reordered.append(path)
+
+				traces = []
+				for path in path_coords_reordered:
 					x_p = []
 					y_p = []
 					s1 = path.strip().split('_')[-2]
@@ -4178,7 +4291,7 @@ def compute_trajectories(pathname, root, gene, n_clicks):
 								y = y_c,
 								mode='markers',
 								opacity = 0.6,
-								name = 'single-cell mappings',
+								name = 'Single Cells',
 								text = exp_labels,
 								marker = dict(
 									size = 6,
@@ -4204,7 +4317,7 @@ def compute_trajectories(pathname, root, gene, n_clicks):
         	autosize = True,
         	margin=dict(l=0,r=0,t=0),
             hovermode='closest',
-            xaxis = dict(showgrid = False, zeroline=False, title = 'Pseudotime'),
+            xaxis = dict(showgrid = False, zeroline=False, showline=True, title = 'Pseudotime'),
             yaxis = dict(showgrid = False, zeroline=False, title = ''),
         )
     }
@@ -4226,7 +4339,24 @@ def compute_trajectories(dataset, root, gene):
 	cell_label = '/STREAM/precomputed/%s/cell_label.tsv.gz' % dataset
 	cell_label_colors = '/STREAM/precomputed/%s/cell_label_color.tsv.gz' % dataset
 
+	edges = '/STREAM/precomputed/%s/STREAM_result/edges.tsv' % dataset
+	edge_list = []
+
+	with open(edges, 'r') as f:
+		for line in f:
+			line = line.strip().split('\t')
+			edge_list.append([str(line[0]), str(line[1])])
+
+	path_coords_reordered = []
+	for e in edge_list:
+		entry = [x for x in path_coords if ((e[0] in x.split('/')[-1]) and (e[1] in x.split('/')[-1]))]
+		path_coords_reordered.append(entry[0])
+
 	for path in path_coords:
+		if path not in path_coords_reordered:
+			path_coords_reordered.append(path)
+
+	for path in path_coords_reordered:
 		x_p = []
 		y_p = []
 		s1 = path.strip().split('_')[-2]
@@ -4292,7 +4422,7 @@ def compute_trajectories(dataset, root, gene):
 					y = y_c,
 					mode='markers',
 					opacity = 0.6,
-					name = 'single-cell mappings',
+					name = 'Single Cells',
 					text = exp_labels,
 					marker = dict(
 						size = 6,
@@ -4308,7 +4438,7 @@ def compute_trajectories(dataset, root, gene):
         	autosize = True,
         	margin=dict(l=0,r=0,t=0),
             hovermode='closest',
-            xaxis = dict(showgrid = False, zeroline=False, title = 'Pseudotime'),
+            xaxis = dict(showgrid = False, zeroline=False, showline=True, title = 'Pseudotime'),
             yaxis = dict(showgrid = False, zeroline=False, title = ''),
         )
     }
@@ -4870,8 +5000,25 @@ def compute_trajectories(pathname, root, gene, n_clicks):
 					new_json_string = json.dumps(param_dict)
 					f.write(new_json_string + '\n')
 
-				traces = []
+				edges = RESULTS_FOLDER + '/edges.tsv'
+				edge_list = []
+
+				with open(edges, 'r') as f:
+					for line in f:
+						line = line.strip().split('\t')
+						edge_list.append([str(line[0]), str(line[1])])
+
+				path_coords_reordered = []
+				for e in edge_list:
+					entry = [x for x in path_coords if ((e[0] in x.split('/')[-1]) and (e[1] in x.split('/')[-1]))]
+					path_coords_reordered.append(entry[0])
+
 				for path in path_coords:
+					if path not in path_coords_reordered:
+						path_coords_reordered.append(path)
+
+				traces = []
+				for path in path_coords_reordered:
 					x_p = []
 					y_p = []
 					s1 = path.strip().split('_')[-2]
@@ -4938,7 +5085,7 @@ def compute_trajectories(pathname, root, gene, n_clicks):
 								y = y_c,
 								mode='markers',
 								opacity = 0.6,
-								name = 'single-cell mappings',
+								name = 'Single Cells',
 								text = exp_labels,
 								marker = dict(
 									size = 6,
@@ -4964,7 +5111,7 @@ def compute_trajectories(pathname, root, gene, n_clicks):
         	autosize = True,
         	margin=dict(l=0,r=0,t=0),
             hovermode='closest',
-            xaxis = dict(showgrid = False, zeroline=False, title = 'Pseudotime'),
+            xaxis = dict(showgrid = False, zeroline=False, showline=True, title = 'Pseudotime'),
             yaxis = dict(showgrid = False, zeroline=False, title = ''),
         )
     }
@@ -4986,8 +5133,25 @@ def compute_trajectories(dataset, root, gene):
 	cell_label = '/STREAM/precomputed/%s/cell_label.tsv.gz' % dataset
 	cell_label_colors = '/STREAM/precomputed/%s/cell_label_color.tsv.gz' % dataset
 
-	traces = []
+	edges = '/STREAM/precomputed/%s/STREAM_result/edges.tsv' % dataset
+	edge_list = []
+
+	with open(edges, 'r') as f:
+		for line in f:
+			line = line.strip().split('\t')
+			edge_list.append([str(line[0]), str(line[1])])
+
+	path_coords_reordered = []
+	for e in edge_list:
+		entry = [x for x in path_coords if ((e[0] in x.split('/')[-1]) and (e[1] in x.split('/')[-1]))]
+		path_coords_reordered.append(entry[0])
+
 	for path in path_coords:
+		if path not in path_coords_reordered:
+			path_coords_reordered.append(path)
+
+	traces = []
+	for path in path_coords_reordered:
 		x_p = []
 		y_p = []
 		s1 = path.strip().split('_')[-2]
@@ -5054,7 +5218,7 @@ def compute_trajectories(dataset, root, gene):
 					y = y_c,
 					mode='markers',
 					opacity = 0.6,
-					name = 'single-cell mappings',
+					name = 'Single Cells',
 					text = exp_labels,
 					marker = dict(
 						size = 6,
@@ -5070,7 +5234,7 @@ def compute_trajectories(dataset, root, gene):
         	autosize = True,
         	margin=dict(l=0,r=0,t=0),
             hovermode='closest',
-            xaxis = dict(showgrid = False, zeroline=False, title = 'Pseudotime'),
+            xaxis = dict(showgrid = False, zeroline=False, showline=True, title = 'Pseudotime'),
             yaxis = dict(showgrid = False, zeroline=False, title = ''),
         )
     }
