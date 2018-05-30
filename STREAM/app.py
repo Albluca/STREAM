@@ -129,7 +129,7 @@ def index():
 	'sg-genes':['False'], 'discovery-genes':['False'], 'correlation-genes':['False'], 'sg-gene':'False', 'discovery-gene':'False', 'correlation-gene':'False',
 	'compute-run':False,'sg-run':False,'discovery-run':False, 'correlation-run':False, 'required_files': ['Data Matrix', 'Cell Labels', 'Cell Label Colors'],
 	'checkbutton1':1, 'checkpoint1':True,'checkbutton2':1, 'checkpoint2':True,'checkbutton3':1, 'checkpoint3':True,'checkbutton4':1, 'checkpoint4':True,
-	'matrix-update':'Data Matrix: No upload', 'cl-update':'Cell Labels File: No upload', 'clc-update':'Cell Label Colors File: No upload', 'compute-disable':True, 'compute-update':'Load Personal or Example Data (Step 1)'}
+	'matrix-update':'Data Matrix: No Upload (Required)', 'cl-update':'Cell Labels File: No Upload (Optional)', 'clc-update':'Cell Label Colors File: No Upload (Optional)', 'compute-disable':True, 'compute-update':'Load Personal or Example Data (Step 1)'}
 
 	with open(UPLOADS_FOLDER + '/params.json', 'w') as f:
 		json_string = json.dumps(param_dict)
@@ -234,7 +234,7 @@ def save_files1():
 				matrix_update = 'Data Matrix: Upload Successful'
 
 	else:
-		matrix_update = 'Data Matrix: No Upload'
+		matrix_update = 'Data Matrix: No Upload (Required)'
 
 	# Cell Labels File and Cell Label Colors File reporting
 	if len(cell_label) > 0:
@@ -285,7 +285,7 @@ def save_files1():
 						clc_update = 'Cell Label Colors File: [ERROR] Disagreement between number of Cell Labels and Cell Label Colors ...'
 
 			else:
-				clc_update = 'Cell Label Colors File: No Upload'
+				clc_update = 'Cell Label Colors File: No Upload (Optional)'
 
 				cl = pd.read_table(cell_label[0], header = None, low_memory = False, compression = 'infer')
 				if len(cl.columns) == 1 and cl.size == len(df.columns):
@@ -300,15 +300,15 @@ def save_files1():
 			if len(cell_label_colors) > 0:
 				clc_update = 'Cell Label Colors File: [ERROR] No input Data Matrix ...'
 			else:
-				clc_update = 'Cell Label Colors File: No Upload'
+				clc_update = 'Cell Label Colors File: No Upload (Optional)'
 
 	elif len(cell_label_colors) > 0:
-		cl_update = 'Cell Labels File: No Upload'
+		cl_update = 'Cell Labels File: No Upload (Optional)'
 		clc_update = 'Cell Label Colors File: [ERROR] No associated Cell Labels File ...'
 
 	else:
-		cl_update = 'Cell Labels File: No Upload'
-		clc_update = 'Cell Label Colors File: No Upload'
+		cl_update = 'Cell Labels File: No Upload (Optional)'
+		clc_update = 'Cell Label Colors File: No Upload (Optional)'
 
 	# Update JSON
 	with open(UPLOADS_FOLDER + '/params.json', 'r') as f:
@@ -684,10 +684,10 @@ app.layout = html.Div([
 
 	dcc.Interval(id='common-interval', interval=5000),
 
-	dcc.Interval(id='common-interval-1', interval=1000000),
-	dcc.Interval(id='common-interval-2', interval=1000000),
-	dcc.Interval(id='common-interval-3', interval=1000000),
-	dcc.Interval(id='common-interval-4', interval=1000000),
+	dcc.Interval(id='common-interval-1', interval=2000000000),
+	dcc.Interval(id='common-interval-2', interval=2000000000),
+	dcc.Interval(id='common-interval-3', interval=2000000000),
+	dcc.Interval(id='common-interval-4', interval=2000000000),
 
 	html.Div(id = 'custom-loading-states-1',
 		children = [
@@ -762,9 +762,9 @@ app.layout = html.Div([
 					html.Br(),
 					html.Br(),
 
-					html.Label(id = 'matrix-update', children = 'Data Matrix: No Upload', style = {'font-weight':'bold'}),
-					html.Label(id = 'cl-update', children = 'Cell Labels File: No Upload', style = {'font-weight':'bold'}),
-					html.Label(id = 'clc-update', children = 'Cell Label Colors File: No Upload', style = {'font-weight':'bold'}),
+					html.Label(id = 'matrix-update', children = 'Data Matrix: No Upload (Required)', style = {'font-weight':'bold'}),
+					html.Label(id = 'cl-update', children = 'Cell Labels File: No Upload (Optional)', style = {'font-weight':'bold'}),
+					html.Label(id = 'clc-update', children = 'Cell Label Colors File: No Upload (Optional)', style = {'font-weight':'bold'}),
 
 					], className = 'six columns'),
 
@@ -796,9 +796,9 @@ app.layout = html.Div([
 			# html.Label(id = 'cl-upload', children = 'Cell Labels File: None', style = {'font-weight':'bold'}),
 			# html.Label(id = 'clc-upload', children = 'Cell Label Colors File: None', style = {'font-weight':'bold'}),
 
-			# html.Label(id = 'matrix-update', children = 'Data Matrix: No Upload', style = {'font-weight':'bold'}),
-			# html.Label(id = 'cl-update', children = 'Cell Labels File: No Upload', style = {'font-weight':'bold'}),
-			# html.Label(id = 'clc-update', children = 'Cell Label Colors File: No Upload', style = {'font-weight':'bold'}),
+			# html.Label(id = 'matrix-update', children = 'Data Matrix: No Upload (Required)', style = {'font-weight':'bold'}),
+			# html.Label(id = 'cl-update', children = 'Cell Labels File: No Upload (Optional)', style = {'font-weight':'bold'}),
+			# html.Label(id = 'clc-update', children = 'Cell Label Colors File: No Upload (Optional)', style = {'font-weight':'bold'}),
 
 			# html.Br(),
 
@@ -1534,7 +1534,7 @@ def num_clicks_compute(dataset):
 
 def update_input_files(pathname):
 
-	file_names = ['Data Matrix', 'Cell Labels (Optional)', 'Cell Label Colors (Optional)']
+	file_names = ['Data Matrix', 'Cell Labels', 'Cell Label Colors']
 
 	return ','.join(file_names)
 
@@ -1987,7 +1987,7 @@ def update_container(n_clicks, segmentation_container, pathname):
 
 	else:
 
-		return 1000000
+		return 2000000000
 
 @app.callback(
     Output('3d-scatter', 'figure'),
@@ -3550,7 +3550,7 @@ def update_container(n_clicks, figure, pathname):
 
 	else:
 
-		return 1000000
+		return 2000000000
 
 @app.callback(
     Output('2d-subway-sg', 'figure'),
@@ -4171,7 +4171,7 @@ def update_container(n_clicks, figure, pathname):
 
 	else:
 
-		return 1000000
+		return 2000000000
 
 @app.callback(
     Output('2d-subway-discovery', 'figure'),
@@ -4965,7 +4965,7 @@ def update_container(n_clicks, figure, pathname):
 
 	else:
 
-		return 1000000
+		return 2000000000
 
 @app.callback(
     Output('2d-subway-correlation', 'figure'),
